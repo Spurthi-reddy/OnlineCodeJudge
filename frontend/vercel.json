@@ -3,7 +3,12 @@
     {
       "source": "/api/:path*",
       "destination": "https://onlinecodejudge.onrender.com/api/:path*"
+    },
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
     }
   ]
 }
+
 
