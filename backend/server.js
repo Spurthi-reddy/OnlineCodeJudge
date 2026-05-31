@@ -91,6 +91,22 @@ async function seedDatabase() {
     const problemCount = await Problem.countDocuments();
     const userCount = await User.countDocuments();
 
+    // Migration: Update any existing problems missing a slug
+    const sluglessProblems = await Problem.find({
+      $or: [{ slug: { $exists: false } }, { slug: null }, { slug: '' }],
+    });
+    if (sluglessProblems.length > 0) {
+      console.log(`Migrating ${sluglessProblems.length} slugless problems...`);
+      for (const prob of sluglessProblems) {
+        prob.slug = prob.title
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)+/g, '');
+        await prob.save();
+      }
+      console.log('Migration completed successfully!');
+    }
+
     if (userCount === 0) {
       console.log('Seeding default users...');
       // Seed User
@@ -468,9 +484,14 @@ async function seedDatabase() {
 
       if (missingProblems.length > 0) {
         for (const problem of missingProblems) {
+          const slug = problem.title
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/(^-|-$)+/g, '');
+
           await Problem.findOneAndUpdate(
             { title: problem.title },
-            problem,
+            { ...problem, slug },
             {
               upsert: true,
               new: true,
